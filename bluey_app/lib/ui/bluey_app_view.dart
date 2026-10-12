@@ -50,7 +50,7 @@ class _BlueyAppViewState extends State<BlueyAppView> {
           // Sidebar
           Container(
             width: 300,
-            color: const Color(Palette.panel).withOpacity(0.6),
+            color: const Color(Palette.panel).withValues(alpha: 0.6),
             padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +80,7 @@ class _BlueyAppViewState extends State<BlueyAppView> {
                                 shape: BoxShape.circle,
                                 color: widget.isConnected
                                     ? const Color(0xFF5BE49B)
-                                    : const Color(Palette.inkSoft).withOpacity(0.5),
+                                    : const Color(Palette.inkSoft).withValues(alpha: 0.5),
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -165,7 +165,7 @@ class _BlueyAppViewState extends State<BlueyAppView> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
                       side: BorderSide.none,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

@@ -47,9 +47,9 @@ class _SoundButtonState extends State<SoundButton> {
             IconButton(
               onPressed: () => setState(() => _open = !_open),
               icon: Icon(_open ? Icons.close : _speakerIcon),
-              color: Colors.white.withOpacity(_open ? 0.9 : 0.35),
+              color: Colors.white.withValues(alpha: _open ? 0.9 : 0.35),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(_open ? 0.14 : 0.06),
+                backgroundColor: Colors.white.withValues(alpha: _open ? 0.14 : 0.06),
               ),
             ),
             if (_open) ...[
@@ -58,10 +58,10 @@ class _SoundButtonState extends State<SoundButton> {
                 width: 260,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(Palette.panel).withOpacity(0.95),
+                  color: const Color(Palette.panel).withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -94,7 +94,7 @@ class _SoundButtonState extends State<SoundButton> {
                       value: widget.volume,
                       onChanged: widget.onVolumeChanged,
                       activeColor: const Color(Palette.berry2),
-                      inactiveColor: Colors.white.withOpacity(0.2),
+                      inactiveColor: Colors.white.withValues(alpha: 0.2),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(

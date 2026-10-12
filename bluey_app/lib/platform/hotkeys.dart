@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/services.dart';
 
 typedef HotKeyHandler = void Function();
@@ -32,11 +31,11 @@ class GlobalHotKeyManager {
     _handlers[action]?.call();
   }
 
-  void handleRawKeyEvent(RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return;
+  void handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
 
-    final isAlt = event.isAltPressed;
-    final isControl = event.isControlPressed;
+    final isAlt = HardwareKeyboard.instance.isAltPressed;
+    final isControl = HardwareKeyboard.instance.isControlPressed;
 
     if (isAlt && event.logicalKey == LogicalKeyboardKey.space) {
       trigger(HotKeyAction.toggleAwake);

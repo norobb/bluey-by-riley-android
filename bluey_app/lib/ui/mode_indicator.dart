@@ -136,7 +136,7 @@ class _ModeIndicatorState extends State<ModeIndicator>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(45),
                       border: Border.all(
-                        color: look.color.withOpacity(opacity),
+                        color: look.color.withValues(alpha: opacity),
                         width: look.border,
                       ),
                     ),
@@ -152,7 +152,7 @@ class _ModeIndicatorState extends State<ModeIndicator>
                   ),
                   decoration: ShapeDecoration(
                     color: look.label == null
-                        ? Colors.white.withOpacity(0.06)
+                        ? Colors.white.withValues(alpha: 0.06)
                         : look.color,
                     shape: const StadiumBorder(),
                   ),
@@ -163,7 +163,7 @@ class _ModeIndicatorState extends State<ModeIndicator>
                         look.icon,
                         size: 16,
                         color: look.label == null
-                            ? look.color.withOpacity(0.7)
+                            ? look.color.withValues(alpha: 0.7)
                             : Colors.white,
                       ),
                       if (look.label != null) ...[

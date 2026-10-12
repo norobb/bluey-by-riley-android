@@ -127,7 +127,7 @@ class TeardropCursorPainter extends CustomPainter {
     // Glow shadow
     if (glow) {
       final glowPaint = Paint()
-        ..color = const Color(Palette.berry2).withOpacity(0.7 * opacity)
+        ..color = const Color(Palette.berry2).withValues(alpha: 0.7 * opacity)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 30.0 * k);
       canvas.drawPath(path, glowPaint);
     }
@@ -150,7 +150,7 @@ class TeardropCursorPainter extends CustomPainter {
 
     // Rim stroke
     final rimPaint = Paint()
-      ..color = Colors.white.withOpacity(opacity)
+      ..color = Colors.white.withValues(alpha: opacity)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0 * k;
     canvas.drawPath(path, rimPaint);

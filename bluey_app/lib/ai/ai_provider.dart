@@ -380,6 +380,7 @@ class GeminiRealtimeSession implements RealtimeAudioSession {
             "response": {
               "output": {
                 "text": outputText,
+                // ignore: use_null_aware_elements
                 if (imageBase64 != null) "image": imageBase64,
               }
             },

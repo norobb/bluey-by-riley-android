@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../audio/chirp_synthesizer.dart';
 import '../graphics/face_animator.dart';
 import '../graphics/face_painter.dart';
-import '../models/session_models.dart';
-import '../protocol/googly_protocol.dart';
 import '../storage/session_store.dart';
 import 'bluey_app_view.dart';
 import 'mode_indicator.dart';
@@ -27,7 +25,7 @@ class _FaceScreenState extends State<FaceScreen>
 
   bool _showPairing = true;
   bool _showApp = false;
-  bool _isConnected = false;
+  final bool _isConnected = false;
   bool _holdingToAsk = false;
   Timer? _holdTimer;
   double _volume = 1.0;
@@ -128,7 +126,7 @@ class _FaceScreenState extends State<FaceScreen>
               onPressed: () => setState(() => _showApp = true),
               icon: const Icon(Icons.grid_view_rounded, color: Colors.white30, size: 20),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.06),
+                backgroundColor: Colors.white.withValues(alpha: 0.06),
               ),
             ),
           ),

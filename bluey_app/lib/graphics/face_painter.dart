@@ -34,7 +34,7 @@ class FacePainter extends CustomPainter {
 
     // Glow shadow
     final shadowPaint = Paint()
-      ..color = const Color(Palette.berry2).withOpacity(0.5)
+      ..color = const Color(Palette.berry2).withValues(alpha: 0.5)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 45);
     canvas.drawPath(blob, shadowPaint);
 
@@ -53,8 +53,8 @@ class FacePainter extends CustomPainter {
       ),
       radius: 0.6,
       colors: [
-        Colors.white.withOpacity(0.5),
-        Colors.white.withOpacity(0.0),
+        Colors.white.withValues(alpha: 0.5),
+        Colors.white.withValues(alpha: 0.0),
       ],
     ).createShader(body);
     canvas.drawPath(blob, Paint()..shader = shineShader);
@@ -62,7 +62,7 @@ class FacePainter extends CustomPainter {
     // Head glossy sparkle
     canvas.drawOval(
       Rect.fromLTWH(body.left + 190, body.top + 40, 46, 22),
-      Paint()..color = Colors.white.withOpacity(0.35),
+      Paint()..color = Colors.white.withValues(alpha: 0.35),
     );
     canvas.restore();
 
@@ -91,7 +91,7 @@ class FacePainter extends CustomPainter {
       final c = eyes[i];
       final cheek = Rect.fromLTWH(c.dx - 45 + side * 62, c.dy + 96, 90, 42);
       final cheekPaint = Paint()
-        ..color = const Color(0xFFF3A6D8).withOpacity(0.25 + 0.45 * frame.blush)
+        ..color = const Color(0xFFF3A6D8).withValues(alpha: 0.25 + 0.45 * frame.blush)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       canvas.drawOval(cheek, cheekPaint);
     }
@@ -188,7 +188,7 @@ class FacePainter extends CustomPainter {
           );
           canvas.drawOval(
             Rect.fromCircle(center: Offset(pupilCenter.dx + r * 0.14, pupilCenter.dy + r * 0.11), radius: r * 0.12),
-            Paint()..color = Colors.white.withOpacity(0.85),
+            Paint()..color = Colors.white.withValues(alpha: 0.85),
           );
 
           // Happy squint
@@ -209,7 +209,7 @@ class FacePainter extends CustomPainter {
               Offset(c.dx - 92, whiteRect.top + whiteRect.height * droop),
               Offset(c.dx + 92, whiteRect.top + whiteRect.height * droop),
               Paint()
-                ..color = navy.withOpacity(0.7)
+                ..color = navy.withValues(alpha: 0.7)
                 ..strokeWidth = 8
                 ..strokeCap = StrokeCap.round,
             );
@@ -241,7 +241,7 @@ class FacePainter extends CustomPainter {
             style: TextStyle(
               fontFamily: 'Fredoka',
               fontSize: sizeVal,
-              color: Colors.white.withOpacity(0.9 * sin(pi * phase)),
+              color: Colors.white.withValues(alpha: 0.9 * sin(pi * phase)),
             ),
           ),
           textDirection: TextDirection.ltr,
@@ -258,7 +258,7 @@ class FacePainter extends CustomPainter {
         final dot = Rect.fromLTWH(body.left + 690 + i * 26, body.top + 40 - i * 12 + wobble, 16, 16);
         canvas.drawOval(
           dot,
-          Paint()..color = Colors.white.withOpacity(1.0 - i * 0.3),
+          Paint()..color = Colors.white.withValues(alpha: 1.0 - i * 0.3),
         );
       }
     }
@@ -283,7 +283,7 @@ class FacePainter extends CustomPainter {
           noseW * 0.56,
           noseH * 0.3,
         );
-        canvas.drawOval(tongue, Paint()..color = const Color(0xFFE58BC4).withOpacity(0.9));
+        canvas.drawOval(tongue, Paint()..color = const Color(0xFFE58BC4).withValues(alpha: 0.9));
       }
     }
 

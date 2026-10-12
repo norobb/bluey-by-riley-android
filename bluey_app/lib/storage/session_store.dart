@@ -36,9 +36,7 @@ class SessionStore {
         final List<dynamic> jsonList = jsonDecode(content);
         sessions = jsonList.map((j) {
           final s = BlueySession.fromJson(j as Map<String, dynamic>);
-          if (s.ended == null) {
-            s.ended = s.entries.isNotEmpty ? s.entries.last.time : s.started;
-          }
+          s.ended ??= s.entries.isNotEmpty ? s.entries.last.time : s.started;
           return s;
         }).toList();
       } catch (e) {
@@ -245,7 +243,6 @@ class SessionStore {
 
   /// Generates Markdown notes for a session (notes.md) matching MeetingNotes.swift format.
   static String generateMarkdownNotes(Map<String, dynamic> sessionJson) {
-    final id = sessionJson['id'] as String? ?? '';
     final startedAt = (sessionJson['started'] as num? ?? 0).toDouble();
     final started = DateTime.fromMillisecondsSinceEpoch((startedAt * 1000).toInt());
 
