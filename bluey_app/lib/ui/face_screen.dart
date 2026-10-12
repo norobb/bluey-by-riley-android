@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../audio/chirp_synthesizer.dart';
 import '../graphics/face_animator.dart';
 import '../graphics/face_painter.dart';
-import '../models/session_models.dart';
-import '../protocol/googly_protocol.dart';
 import '../storage/session_store.dart';
 import 'bluey_app_view.dart';
 import 'mode_indicator.dart';
