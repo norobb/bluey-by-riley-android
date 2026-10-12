@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 abstract class AIProvider {
@@ -15,12 +16,14 @@ abstract class AIProvider {
   Future<List<Map<String, dynamic>>> transcribeAudio({
     required String apiKey,
     required List<int> audioBytes,
+    String? modelOverride,
   });
 
   Future<Map<String, dynamic>> research({
     required String apiKey,
     required String question,
     String? context,
+    String? modelOverride,
   });
 }
 
@@ -33,8 +36,45 @@ abstract class RealtimeAudioSession {
   void close();
 }
 
+enum GeneralGeminiModel {
+  gemini37Flash('gemini-3.7-flash', 'Gemini 3.7 Flash (Default)'),
+  gemini38Flash('gemini-3.8-flash', 'Gemini 3.8 Flash');
+
+  final String modelId;
+  final String displayName;
+
+  const GeneralGeminiModel(this.modelId, this.displayName);
+
+  static GeneralGeminiModel fromString(String raw) {
+    return GeneralGeminiModel.values.firstWhere(
+      (m) => m.modelId == raw || m.name == raw,
+      orElse: () => GeneralGeminiModel.gemini37Flash,
+    );
+  }
+}
+
 /// Google Gemini API Provider Implementation (Gemini Multimodal Live API via WebSocket + REST)
 class GeminiProvider implements AIProvider {
+  static const String realtimeModelId = 'models/gemini-2.0-flash-exp';
+
+  GeneralGeminiModel _selectedGeneralModel = GeneralGeminiModel.gemini37Flash;
+
+  GeneralGeminiModel get selectedGeneralModel => _selectedGeneralModel;
+
+  Future<void> loadSelectedModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('gemini_general_model');
+    if (saved != null) {
+      _selectedGeneralModel = GeneralGeminiModel.fromString(saved);
+    }
+  }
+
+  Future<void> setSelectedModel(GeneralGeminiModel model) async {
+    _selectedGeneralModel = model;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gemini_general_model', model.modelId);
+  }
+
   @override
   String get name => "Google Gemini";
 
@@ -48,6 +88,7 @@ class GeminiProvider implements AIProvider {
       apiKey: apiKey,
       systemInstruction: systemInstruction,
       tools: tools,
+      realtimeModelId: realtimeModelId,
     );
   }
 
@@ -55,9 +96,11 @@ class GeminiProvider implements AIProvider {
   Future<List<Map<String, dynamic>>> transcribeAudio({
     required String apiKey,
     required List<int> audioBytes,
+    String? modelOverride,
   }) async {
-    final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+    final targetModel = modelOverride ?? _selectedGeneralModel.modelId;
+    final primaryUrl = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=$apiKey');
 
     final audioBase64 = base64Encode(audioBytes);
     final payload = {
@@ -82,11 +125,22 @@ class GeminiProvider implements AIProvider {
       }
     };
 
-    final resp = await http.post(
-      url,
+    var resp = await http.post(
+      primaryUrl,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );
+
+    if (resp.statusCode == 404 && targetModel != 'gemini-2.0-flash') {
+      // Model unavailable in current API tier: proposal and fallback
+      final fallbackUrl = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+      resp = await http.post(
+        fallbackUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+    }
 
     if (resp.statusCode == 200) {
       final json = jsonDecode(resp.body);
@@ -109,9 +163,11 @@ class GeminiProvider implements AIProvider {
     required String apiKey,
     required String question,
     String? context,
+    String? modelOverride,
   }) async {
+    final targetModel = modelOverride ?? _selectedGeneralModel.modelId;
     final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+        'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=$apiKey');
 
     var prompt = "Research this question and write a concise, clear report for a user:\nQuestion: $question";
     if (context != null && context.isNotEmpty) {
@@ -133,11 +189,21 @@ class GeminiProvider implements AIProvider {
       ]
     };
 
-    final resp = await http.post(
+    var resp = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );
+
+    if (resp.statusCode == 404 && targetModel != 'gemini-2.0-flash') {
+      final fallbackUrl = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+      resp = await http.post(
+        fallbackUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+    }
 
     if (resp.statusCode == 200) {
       final json = jsonDecode(resp.body);
@@ -155,7 +221,7 @@ class GeminiProvider implements AIProvider {
         ]
       };
     } else {
-      throw Exception("Gemini Research Error (${resp.statusCode}): ${resp.body}");
+      throw Exception("Gemini Research Error (${resp.statusCode}): Model '$targetModel' unavailable. Try switching to Gemini 2.0 Flash.");
     }
   }
 }
@@ -164,6 +230,7 @@ class GeminiRealtimeSession implements RealtimeAudioSession {
   final String apiKey;
   final String systemInstruction;
   final List<Map<String, dynamic>> tools;
+  final String realtimeModelId;
 
   WebSocketChannel? _channel;
   final _eventController = StreamController<Map<String, dynamic>>.broadcast();
@@ -172,6 +239,7 @@ class GeminiRealtimeSession implements RealtimeAudioSession {
     required this.apiKey,
     required this.systemInstruction,
     required this.tools,
+    this.realtimeModelId = 'models/gemini-2.0-flash-exp',
   });
 
   @override
@@ -203,7 +271,7 @@ class GeminiRealtimeSession implements RealtimeAudioSession {
     // Send setup frame
     final setupFrame = {
       "setup": {
-        "model": "models/gemini-2.0-flash-exp",
+        "model": realtimeModelId,
         "generationConfig": {
           "responseModalities": ["TEXT"],
         },
@@ -352,6 +420,7 @@ class OpenAIProvider implements AIProvider {
   Future<List<Map<String, dynamic>>> transcribeAudio({
     required String apiKey,
     required List<int> audioBytes,
+    String? modelOverride,
   }) async {
     return [
       {"speaker": "A", "start": 0.0, "text": "OpenAI transcription result"}
@@ -363,6 +432,7 @@ class OpenAIProvider implements AIProvider {
     required String apiKey,
     required String question,
     String? context,
+    String? modelOverride,
   }) async {
     return {
       "question": question,
