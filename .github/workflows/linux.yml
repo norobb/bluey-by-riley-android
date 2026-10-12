@@ -1,0 +1,63 @@
+name: Linux CI Workflow
+
+on:
+  push:
+    paths:
+      - 'bluey_app/linux/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/linux.yml'
+  pull_request:
+    paths:
+      - 'bluey_app/linux/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/linux.yml'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build & Test Linux App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: bluey_app
+
+      - name: Analyze code
+        run: flutter analyze
+        working-directory: bluey_app
+
+      - name: Run unit tests
+        run: flutter test
+        working-directory: bluey_app
+
+      - name: Build Linux App
+        run: flutter build linux --release
+        working-directory: bluey_app
+
+      - name: Upload Linux Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bluey-app-linux
+          path: bluey_app/build/linux/x64/release/bundle
+          if-no-files-found: error

@@ -245,7 +245,6 @@ class SessionStore {
 
   /// Generates Markdown notes for a session (notes.md) matching MeetingNotes.swift format.
   static String generateMarkdownNotes(Map<String, dynamic> sessionJson) {
-    final id = sessionJson['id'] as String? ?? '';
     final startedAt = (sessionJson['started'] as num? ?? 0).toDouble();
     final started = DateTime.fromMillisecondsSinceEpoch((startedAt * 1000).toInt());
 

@@ -1,0 +1,64 @@
+name: Android CI Workflow
+
+on:
+  push:
+    paths:
+      - 'bluey_app/android/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'bluey_app/android/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build & Test Android App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: bluey_app
+
+      - name: Analyze code
+        run: flutter analyze
+        working-directory: bluey_app
+
+      - name: Run unit tests
+        run: flutter test
+        working-directory: bluey_app
+
+      - name: Build Android APK
+        run: flutter build apk --release
+        working-directory: bluey_app
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bluey-app-android-apk
+          path: bluey_app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
