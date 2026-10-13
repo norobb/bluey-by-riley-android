@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../audio/chirp_synthesizer.dart';
 import '../graphics/face_animator.dart';
 import '../graphics/face_painter.dart';
+import '../services/permission_manager.dart';
 import '../storage/session_store.dart';
 import 'bluey_app_view.dart';
 import 'mode_indicator.dart';
@@ -37,6 +38,11 @@ class _FaceScreenState extends State<FaceScreen>
       vsync: this,
       duration: const Duration(seconds: 100),
     )..repeat();
+    _initPermissions();
+  }
+
+  Future<void> _initPermissions() async {
+    await PermissionManager().checkAllPermissions();
   }
 
   @override
@@ -53,8 +59,9 @@ class _FaceScreenState extends State<FaceScreen>
     ChirpSynthesizer.playChirp(syllables: 2, volume: _volume);
   }
 
-  void _onTapDown(TapDownDetails details) {
+  void _onTapDown(TapDownDetails details) async {
     _holdTimer?.cancel();
+    await PermissionManager().requestMicrophonePermission();
     _holdTimer = Timer(const Duration(milliseconds: 300), () {
       setState(() {
         _holdingToAsk = true;
@@ -158,13 +165,14 @@ class _FaceScreenState extends State<FaceScreen>
                 macs: const ["My Computer"],
                 currentMac: "My Computer",
                 onClose: () => setState(() => _showApp = false),
-                onToggleSession: () {
-                  if (_animator.awake) {
-                    widget.store.end();
-                    _animator.awake = false;
-                  } else {
+                onToggleSession: () async {
+                  if (!_animator.awake) {
+                    await PermissionManager().ensureRequiredPermissions();
                     widget.store.start();
                     _animator.awake = true;
+                  } else {
+                    widget.store.end();
+                    _animator.awake = false;
                   }
                   setState(() {});
                 },
