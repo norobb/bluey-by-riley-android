@@ -1,0 +1,73 @@
+name: macOS CI Workflow
+
+on:
+  push:
+    paths:
+      - 'Mac/**'
+      - 'Shared/**'
+      - 'Package.swift'
+      - 'bluey_app/macos/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/macos.yml'
+  pull_request:
+    paths:
+      - 'Mac/**'
+      - 'Shared/**'
+      - 'Package.swift'
+      - 'bluey_app/macos/**'
+      - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
+      - 'bluey_app/test/**'
+      - 'bluey_app/pubspec.yaml'
+      - 'bluey_app/pubspec.lock'
+      - '.github/workflows/macos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    name: Build & Test macOS Apps
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Native macOS App
+        run: ./scripts/build-mac.sh
+
+      - name: Upload Native macOS App
+        uses: actions/upload-artifact@v4
+        with:
+          name: bluey-native-mac-app
+          path: build/Bluey.app
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+        working-directory: bluey_app
+
+      - name: Analyze Flutter code
+        run: flutter analyze
+        working-directory: bluey_app
+
+      - name: Run Flutter unit tests
+        run: flutter test
+        working-directory: bluey_app

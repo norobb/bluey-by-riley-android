@@ -5,19 +5,30 @@ on:
     paths:
       - 'bluey_app/android/**'
       - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
       - 'bluey_app/test/**'
       - 'bluey_app/pubspec.yaml'
       - 'bluey_app/pubspec.lock'
+      - 'bluey_app/analysis_options.yaml'
       - '.github/workflows/android.yml'
   pull_request:
     paths:
       - 'bluey_app/android/**'
       - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
       - 'bluey_app/test/**'
       - 'bluey_app/pubspec.yaml'
       - 'bluey_app/pubspec.lock'
+      - 'bluey_app/analysis_options.yaml'
       - '.github/workflows/android.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android:
@@ -29,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -62,3 +73,4 @@ jobs:
           name: bluey-app-android-apk
           path: bluey_app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+          retention-days: 14
