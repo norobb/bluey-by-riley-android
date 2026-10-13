@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/permission_manager.dart';
 import 'storage/session_store.dart';
 import 'ui/face_screen.dart';
 
@@ -6,6 +7,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final store = SessionStore();
   await store.init();
+  await PermissionManager().checkAllPermissions();
   runApp(BlueyApp(store: store));
 }
 
@@ -17,7 +19,7 @@ class BlueyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bluey',
+      title: 'Googly',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../graphics/blob_shape.dart';
 import '../models/session_models.dart';
 import '../protocol/googly_protocol.dart';
+import '../services/update_manager.dart';
 import '../storage/session_store.dart';
 
 class BlueyAppView extends StatefulWidget {
@@ -33,6 +34,27 @@ class BlueyAppView extends StatefulWidget {
 
 class _BlueyAppViewState extends State<BlueyAppView> {
   String? _selectedSessionID;
+  bool _checkingUpdate = false;
+  String _updateStatus = "v1.0.0 (Up to date)";
+
+  Future<void> _handleCheckUpdate() async {
+    setState(() {
+      _checkingUpdate = true;
+      _updateStatus = "Checking for updates...";
+    });
+
+    final info = await UpdateManager().checkForUpdates();
+    if (mounted) {
+      setState(() {
+        _checkingUpdate = false;
+        if (info != null) {
+          _updateStatus = "Update available (${info.version})";
+        } else {
+          _updateStatus = UpdateManager().statusMessage ?? "App is up to date";
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +85,7 @@ class _BlueyAppViewState extends State<BlueyAppView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Bluey",
+                          "Googly",
                           style: TextStyle(
                             fontFamily: 'Fredoka',
                             fontSize: 28,
@@ -146,6 +168,38 @@ class _BlueyAppViewState extends State<BlueyAppView> {
                     fontFamily: 'IBMPlexSans',
                     fontSize: 12,
                     color: Color(Palette.inkSoft),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                InkWell(
+                  onTap: _checkingUpdate ? null : _handleCheckUpdate,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _checkingUpdate ? Icons.sync : Icons.system_update_alt,
+                          size: 16,
+                          color: const Color(Palette.berry2),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _updateStatus,
+                            style: const TextStyle(
+                              fontFamily: 'IBMPlexSans',
+                              fontSize: 12,
+                              color: Color(Palette.inkSoft),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const Spacer(),
@@ -282,7 +336,7 @@ class _SessionDetailWidgetState extends State<SessionDetailWidget> {
 
   void _copyPrompt() {
     final prompt = """
-I recorded a meeting with my Bluey app on ${widget.session.started.toString()}.
+I recorded a meeting with my Googly app on ${widget.session.started.toString()}.
 The notes are saved on my computer. Read the notes in notes.md, then help me summarize.
 """;
     Clipboard.setData(ClipboardData(text: prompt));
