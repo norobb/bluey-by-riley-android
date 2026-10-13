@@ -5,19 +5,30 @@ on:
     paths:
       - 'bluey_app/windows/**'
       - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
       - 'bluey_app/test/**'
       - 'bluey_app/pubspec.yaml'
       - 'bluey_app/pubspec.lock'
+      - 'bluey_app/analysis_options.yaml'
       - '.github/workflows/windows.yml'
   pull_request:
     paths:
       - 'bluey_app/windows/**'
       - 'bluey_app/lib/**'
+      - 'bluey_app/assets/**'
       - 'bluey_app/test/**'
       - 'bluey_app/pubspec.yaml'
       - 'bluey_app/pubspec.lock'
+      - 'bluey_app/analysis_options.yaml'
       - '.github/workflows/windows.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-windows:
@@ -56,3 +67,4 @@ jobs:
           name: bluey-app-windows
           path: bluey_app/build/windows/x64/runner/Release
           if-no-files-found: error
+          retention-days: 14
