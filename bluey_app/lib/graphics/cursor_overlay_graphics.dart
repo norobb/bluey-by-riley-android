@@ -364,6 +364,8 @@ class TeardropCursorPainter extends CustomPainter {
       final pupilRadius = 4.5 * k;
       final pupilOffset = Offset(c.dx + look.dx * 3.4 * k, c.dy + look.dy * 3.4 * k);
       canvas.drawCircle(pupilOffset, pupilRadius, Paint()..color = const Color(Palette.ink));
+      final catchlightOffset = Offset(pupilOffset.dx - pupilRadius * 0.35, pupilOffset.dy - pupilRadius * 0.35);
+      canvas.drawCircle(catchlightOffset, pupilRadius * 0.32, Paint()..color = Colors.white);
     }
 
     canvas.restore();

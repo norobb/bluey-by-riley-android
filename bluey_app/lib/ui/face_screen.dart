@@ -1,3 +1,6 @@
+import "dart:io";
+import "package:flutter/foundation.dart";
+import "package:flutter/services.dart";
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../audio/chirp_synthesizer.dart';
@@ -38,6 +41,9 @@ class _FaceScreenState extends State<FaceScreen>
   @override
   void initState() {
     super.initState();
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 100),
