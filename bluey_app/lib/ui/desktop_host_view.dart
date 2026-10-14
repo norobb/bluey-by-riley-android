@@ -30,6 +30,7 @@ class DesktopHostView extends StatefulWidget {
 class _DesktopHostViewState extends State<DesktopHostView>
     with SingleTickerProviderStateMixin {
   AnimationController? _ticker;
+  Timer? _bgTimer;
   final PhoneServer _phoneServer = PhoneServer();
 
   // Settings Parity with Settings.swift
@@ -62,6 +63,7 @@ class _DesktopHostViewState extends State<DesktopHostView>
         vsync: this,
         duration: const Duration(seconds: 1000),
       )..repeat();
+      _bgTimer = Timer.periodic(const Duration(milliseconds: 16), (_) => _updatePhysicsLoop());
     }
 
     if (widget.enableServer) {
@@ -104,6 +106,7 @@ class _DesktopHostViewState extends State<DesktopHostView>
 
   @override
   void dispose() {
+    _bgTimer?.cancel();
     HardwareKeyboard.instance.removeHandler(GlobalHotKeyManager().handleKeyEvent);
     if (_ticker != null) {
       _ticker!.stop();
@@ -171,6 +174,10 @@ class _DesktopHostViewState extends State<DesktopHostView>
 
   void _onHover(PointerEvent event) {
     _mousePos = event.position;
+  }
+
+  void _updatePhysicsLoop() {
+    if (!mounted) return;
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
 
     if (_mode == CursorMode.following) {
@@ -198,13 +205,17 @@ class _DesktopHostViewState extends State<DesktopHostView>
     }
 
     if (widget.enableServer) {
+      final w = context.size?.width ?? 1000.0;
+      final h = context.size?.height ?? 1000.0;
       _phoneServer.send(FaceState(
-        gazeX: (_cursorTip.dx / (context.size?.width ?? 1000.0) - 0.5) * 2.0,
-        gazeY: (_cursorTip.dy / (context.size?.height ?? 1000.0) - 0.5) * 2.0,
+        gazeX: ((_cursorTip.dx / (w <= 0 ? 1000.0 : w)) - 0.5) * 2.0,
+        gazeY: ((_cursorTip.dy / (h <= 0 ? 1000.0 : h)) - 0.5) * 2.0,
         mood: _mood,
         talk: _caption.isNotEmpty ? 1.0 : 0.0,
       ));
     }
+
+    setState(() {});
   }
 
   void _showPersonalityDialog() {
@@ -634,14 +645,20 @@ class _DesktopOverlayPainter extends CustomPainter {
     if (showCursor) {
       final dx = mousePos.dx - tip.dx;
       final dy = mousePos.dy - tip.dy;
-      final dist = max(1.0, sqrt(dx * dx + dy * dy));
-      final look = Offset((dx / dist).clamp(-1.0, 1.0), (dy / dist).clamp(-1.0, 1.0));
+      final dist = sqrt(dx * dx + dy * dy);
+      final look = dist > 0.001
+          ? Offset((dx / dist).clamp(-1.0, 1.0), (dy / dist).clamp(-1.0, 1.0))
+          : const Offset(-0.7, -0.7);
+
+      final angle = dist > 5.0 ? (atan2(dy, dx) - pi / 4) * 0.15 : 0.0;
+      final squish = (1.0 + min(0.15, dist / 900.0)).clamp(0.85, 1.15);
 
       TeardropCursorPainter(
         tip: tip,
-        angle: 0.0,
+        angle: angle,
         size: cursorSize,
         glow: glow,
+        squish: squish,
         look: look,
       ).paint(canvas, size);
     }

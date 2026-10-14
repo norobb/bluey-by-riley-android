@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'services/permission_manager.dart';
 import 'storage/session_store.dart';
 import 'ui/desktop_host_view.dart';
@@ -8,6 +9,9 @@ import 'ui/face_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
   final store = SessionStore();
   await store.init();
   await PermissionManager().checkAllPermissions();
