@@ -183,11 +183,11 @@ class FacePainter extends CustomPainter {
 
           // Catchlights
           canvas.drawOval(
-            Rect.fromCircle(center: Offset(pupilCenter.dx - r * 0.29, pupilCenter.dy - r * 0.36), radius: r * 0.28),
+            Rect.fromLTWH(pupilCenter.dx - r * 0.58, pupilCenter.dy - r * 0.72, r * 0.56, r * 0.56),
             Paint()..color = Colors.white,
           );
           canvas.drawOval(
-            Rect.fromCircle(center: Offset(pupilCenter.dx + r * 0.14, pupilCenter.dy + r * 0.11), radius: r * 0.12),
+            Rect.fromLTWH(pupilCenter.dx + r * 0.28, pupilCenter.dy + r * 0.22, r * 0.24, r * 0.24),
             Paint()..color = Colors.white.withOpacity(0.85),
           );
 
@@ -292,6 +292,19 @@ class FacePainter extends CustomPainter {
 
   void _fillSkin(Canvas canvas, Path path, Rect body) {
     canvas.drawPath(path, Paint()..shader = BlobShape.shader(body));
+    final shineCenter = Offset(body.left + 246, body.top + 126);
+    final shineShader = RadialGradient(
+      center: Alignment(
+        (shineCenter.dx - body.center.dx) / (body.width / 2),
+        (shineCenter.dy - body.center.dy) / (body.height / 2),
+      ),
+      radius: 0.6,
+      colors: [
+        Colors.white.withOpacity(0.5),
+        Colors.white.withOpacity(0.0),
+      ],
+    ).createShader(body);
+    canvas.drawPath(path, Paint()..shader = shineShader);
   }
 
   @override

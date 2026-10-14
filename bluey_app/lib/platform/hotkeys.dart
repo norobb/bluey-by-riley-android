@@ -31,6 +31,39 @@ class GlobalHotKeyManager {
     _handlers[action]?.call();
   }
 
+  bool handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+
+    final isAlt = HardwareKeyboard.instance.isAltPressed;
+    final isControl = HardwareKeyboard.instance.isControlPressed;
+
+    if (isAlt && event.logicalKey == LogicalKeyboardKey.space) {
+      trigger(HotKeyAction.toggleAwake);
+      return true;
+    } else if (isControl && isAlt) {
+      if (event.logicalKey == LogicalKeyboardKey.keyP) {
+        trigger(HotKeyAction.pointHere);
+        return true;
+      } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
+        trigger(HotKeyAction.toggleFollow);
+        return true;
+      } else if (event.logicalKey == LogicalKeyboardKey.keyD) {
+        trigger(HotKeyAction.goHome);
+        return true;
+      } else if (event.logicalKey == LogicalKeyboardKey.keyT) {
+        trigger(HotKeyAction.talkTest);
+        return true;
+      } else if (event.logicalKey == LogicalKeyboardKey.keyH) {
+        trigger(HotKeyAction.toggleShow);
+        return true;
+      } else if (event.logicalKey == LogicalKeyboardKey.keyS) {
+        trigger(HotKeyAction.stopActions);
+        return true;
+      }
+    }
+    return false;
+  }
+
   void handleRawKeyEvent(RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return;
 

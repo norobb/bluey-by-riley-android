@@ -4,6 +4,8 @@ import '../audio/chirp_synthesizer.dart';
 import '../graphics/face_animator.dart';
 import '../graphics/face_painter.dart';
 import '../services/permission_manager.dart';
+import '../protocol/phone_client.dart';
+import '../protocol/googly_protocol.dart';
 import '../storage/session_store.dart';
 import 'bluey_app_view.dart';
 import 'mode_indicator.dart';
@@ -31,6 +33,8 @@ class _FaceScreenState extends State<FaceScreen>
   Timer? _holdTimer;
   double _volume = 1.0;
 
+  late final PhoneClient _client;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +43,39 @@ class _FaceScreenState extends State<FaceScreen>
       duration: const Duration(seconds: 100),
     )..repeat();
     _initPermissions();
+    _setupClient();
+  }
+
+  void _setupClient() {
+    _client = PhoneClient();
+    _client.onFace = (face) {
+      if (mounted) {
+        final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
+        _animator.receive(face, now);
+      }
+    };
+    _client.onCommand = (cmd) {
+      if (mounted) {
+        if (cmd == 'wake') {
+          setState(() => _animator.awake = true);
+        } else if (cmd == 'sleep') {
+          setState(() => _animator.awake = false);
+        }
+      }
+    };
+    _client.addListener(_onClientChanged);
+    _client.start();
+  }
+
+  void _onClientChanged() {
+    if (mounted) {
+      setState(() {
+        _isConnected = _client.connected;
+        if (_isConnected) {
+          _showPairing = false;
+        }
+      });
+    }
   }
 
   Future<void> _initPermissions() async {
@@ -47,6 +84,8 @@ class _FaceScreenState extends State<FaceScreen>
 
   @override
   void dispose() {
+    _client.removeListener(_onClientChanged);
+    _client.stop();
     _animationController.dispose();
     _holdTimer?.cancel();
     super.dispose();
@@ -56,6 +95,7 @@ class _FaceScreenState extends State<FaceScreen>
     setState(() {
       _animator.awake = !_animator.awake;
     });
+    _client.send(Packet(command: _animator.awake ? "wake" : "sleep"));
     ChirpSynthesizer.playChirp(syllables: 2, volume: _volume);
   }
 

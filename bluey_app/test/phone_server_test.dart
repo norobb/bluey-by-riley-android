@@ -1,3 +1,4 @@
+import 'package:bluey_app/protocol/phone_client.dart';
 import 'dart:io';
 import 'package:bluey_app/protocol/googly_protocol.dart';
 import 'package:bluey_app/protocol/line_connection.dart';
@@ -27,6 +28,31 @@ void main() {
 
       server.send(face1);
       server.send(face2); // skipped due to < 0.004 delta within 1 sec
+    });
+
+    test('PhoneClient connects to PhoneServer and exchanges face state', () async {
+      final server = PhoneServer();
+      await server.start(port: 18080);
+
+      final client = PhoneClient();
+      FaceState? receivedFace;
+      client.onFace = (face) {
+        receivedFace = face;
+      };
+
+      client.connectDirect('127.0.0.1', port: 18080);
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      expect(client.connected, isTrue);
+
+      server.send(FaceState(gazeX: 0.5, gazeY: 0.5, mood: Mood.happy));
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      expect(receivedFace, isNotNull);
+      expect(receivedFace?.mood, Mood.happy);
+
+      client.stop();
+      server.stop();
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -98,10 +99,12 @@ class _DesktopHostViewState extends State<DesktopHostView>
     hk.register(HotKeyAction.talkTest, _talkTest);
     hk.register(HotKeyAction.toggleShow, () => setState(() => _showCursor = !_showCursor));
     hk.register(HotKeyAction.stopActions, _stopActions);
+    HardwareKeyboard.instance.addHandler(hk.handleKeyEvent);
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(GlobalHotKeyManager().handleKeyEvent);
     if (_ticker != null) {
       _ticker!.stop();
       _ticker!.dispose();

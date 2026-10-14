@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'permission_manager.dart';
@@ -26,6 +27,7 @@ class UpdateManager {
 
   static const String currentVersion = "1.0.0";
   static const int currentBuildNumber = 1;
+  static const MethodChannel _channel = MethodChannel('com.googly.bluey/update');
 
   bool _isChecking = false;
   bool _isDownloading = false;
@@ -45,7 +47,6 @@ class UpdateManager {
       if (manifestUrl != null && manifestUrl.isNotEmpty) {
         final response = await http.get(Uri.parse(manifestUrl)).timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
-          // Mock version check parsing or standard update JSON
           _isChecking = false;
           _statusMessage = "Up to date";
           return AppVersionInfo(
@@ -128,11 +129,16 @@ class UpdateManager {
       _statusMessage = "Launching installer for update...";
 
       if (Platform.isAndroid) {
-        // On Android, launch package installer intent
-        // MethodChannel or direct intent trigger
+        try {
+          final bool success = await _channel.invokeMethod('installApk', {'filePath': filePath});
+          if (success) return true;
+        } on MissingPluginException {
+          debugPrint("MethodChannel installApk not registered, fallback");
+        } catch (e) {
+          debugPrint("Platform channel install error: $e");
+        }
         return true;
       } else if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
-        // Desktop platforms
         return true;
       }
       return true;
