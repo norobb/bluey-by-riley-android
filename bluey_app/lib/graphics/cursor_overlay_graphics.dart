@@ -91,7 +91,204 @@ class TeardropPath {
   }
 }
 
-enum PointerTrailMode { comet, string, none }
+enum PointerTrailMode { none, comet, string }
+
+enum CursorMode { docked, following, flying, pointing }
+
+class TrailPoint {
+  final Offset position;
+  final double timestamp;
+  final double size;
+
+  TrailPoint({
+    required this.position,
+    required this.timestamp,
+    this.size = 12.0,
+  });
+}
+
+/// Renders the comet particle trail following the cursor.
+class CometTrailPainter extends CustomPainter {
+  final List<TrailPoint> points;
+  final double currentTime;
+
+  CometTrailPainter({
+    required this.points,
+    required this.currentTime,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
+    for (var i = 0; i < points.length; i++) {
+      final pt = points[i];
+      final age = currentTime - pt.timestamp;
+      if (age > 0.6) continue;
+
+      final progress = 1.0 - (age / 0.6);
+      final radius = pt.size * progress;
+      final opacity = (progress * 0.8).clamp(0.0, 1.0);
+
+      final paint = Paint()
+        ..color = Palette.color(Palette.berry1, opacity)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4.0 * progress);
+
+      canvas.drawCircle(pt.position, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CometTrailPainter oldDelegate) => true;
+}
+
+/// Renders an elastic string tether connecting phone position to cursor tip.
+class StringTrailPainter extends CustomPainter {
+  final Offset start;
+  final Offset end;
+  final double tension;
+
+  StringTrailPainter({
+    required this.start,
+    required this.end,
+    this.tension = 0.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mid = Offset((start.dx + end.dx) / 2, (start.dy + end.dy) / 2 + 30 * tension);
+
+    final path = Path()
+      ..moveTo(start.dx, start.dy)
+      ..quadraticBezierTo(mid.dx, mid.dy, end.dx, end.dy);
+
+    final shadowPaint = Paint()
+      ..color = Palette.color(Palette.berry2, 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0);
+
+    final linePaint = Paint()
+      ..color = Palette.color(Palette.berry1, 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 3.0;
+
+    canvas.drawPath(path, shadowPaint);
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant StringTrailPainter oldDelegate) => true;
+}
+
+/// Renders the macOS speech bubble with spring pop animation, dynamic font size, and tail pointing to target.
+class SpeechBubblePainter extends CustomPainter {
+  final String text;
+  final Offset target;
+  final bool tailUp;
+  final double bornTime;
+  final double currentTime;
+
+  SpeechBubblePainter({
+    required this.text,
+    required this.target,
+    this.tailUp = false,
+    required this.bornTime,
+    required this.currentTime,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (text.isEmpty) return;
+
+    final age = max(0.0, currentTime - bornTime);
+    final popProgress = (age * 6.0).clamp(0.0, 1.0);
+    final scale = 0.55 + 0.45 * (1.0 - exp(-popProgress * 5.0));
+    final float = sin(age * 2.2) * 2.0;
+
+    final length = text.length;
+    final fontSize = length <= 50 ? 21.0 : (length <= 110 ? 19.0 : 17.0);
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: Palette.color(Palette.ink),
+          fontSize: fontSize,
+          fontFamily: 'Fredoka',
+          height: 1.25,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+
+    final maxWidth = min(size.width * 0.5, 580.0);
+    textPainter.layout(maxWidth: maxWidth);
+
+    final padX = 18.0;
+    final padY = 12.0;
+    final bubbleWidth = max(textPainter.width + padX * 2, 70.0);
+    final bubbleHeight = textPainter.height + padY * 2;
+    final tailLength = 18.0;
+
+    final bubbleLeft = (target.dx - bubbleWidth / 2).clamp(14.0, size.width - bubbleWidth - 14.0);
+    final bubbleTop = (tailUp
+            ? target.dy + tailLength
+            : target.dy - tailLength - bubbleHeight) +
+        float;
+
+    canvas.save();
+    canvas.translate(bubbleLeft + bubbleWidth / 2, bubbleTop + bubbleHeight / 2);
+    canvas.scale(scale, scale);
+    canvas.translate(-(bubbleLeft + bubbleWidth / 2), -(bubbleTop + bubbleHeight / 2));
+
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(bubbleLeft, bubbleTop, bubbleWidth, bubbleHeight),
+      const Radius.circular(20.0),
+    );
+
+    // Tail path
+    final path = Path()..addRRect(rect);
+    final localTargetX = target.dx.clamp(bubbleLeft + 20.0, bubbleLeft + bubbleWidth - 20.0);
+    final tailPath = Path();
+
+    if (!tailUp) {
+      tailPath.moveTo(localTargetX - 12, bubbleTop + bubbleHeight);
+      tailPath.lineTo(target.dx, target.dy + float * 0.5);
+      tailPath.lineTo(localTargetX + 12, bubbleTop + bubbleHeight);
+    } else {
+      tailPath.moveTo(localTargetX - 12, bubbleTop);
+      tailPath.lineTo(target.dx, target.dy + float * 0.5);
+      tailPath.lineTo(localTargetX + 12, bubbleTop);
+    }
+    tailPath.close();
+
+    final fillPaint = Paint()
+      ..color = Colors.white.withOpacity(0.96)
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = Palette.color(Palette.berry1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(tailPath, fillPaint);
+    canvas.drawPath(path, borderPaint);
+
+    textPainter.paint(
+      canvas,
+      Offset(bubbleLeft + (bubbleWidth - textPainter.width) / 2, bubbleTop + padY),
+    );
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant SpeechBubblePainter oldDelegate) => true;
+}
 
 class TeardropCursorPainter extends CustomPainter {
   final Offset tip;
