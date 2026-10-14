@@ -11,9 +11,16 @@ class Spring {
   Spring(this.value, {this.stiffness = 200.0, this.damping = 0.7});
 
   void step(double target, double dt) {
-    final c = 2 * sqrt(stiffness) * damping;
-    velocity += (stiffness * (target - value) - c * velocity) * dt;
-    value += velocity * dt;
+    if (dt <= 0) return;
+    double remaining = dt;
+    const subDt = 0.002;
+    while (remaining > 0) {
+      final stepTime = min(remaining, subDt);
+      final c = 2 * sqrt(stiffness) * damping;
+      velocity += (stiffness * (target - value) - c * velocity) * stepTime;
+      value += velocity * stepTime;
+      remaining -= stepTime;
+    }
   }
 }
 

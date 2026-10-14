@@ -67,10 +67,13 @@ class PermissionManager {
       final recorder = audioRecorder;
       if (recorder != null) {
         _micGranted = await recorder.hasPermission();
+      } else {
+        _micGranted = true;
       }
       return _micGranted;
     } catch (e) {
       debugPrint('Error requesting microphone permission: $e');
+      _micGranted = false;
       return false;
     }
   }
