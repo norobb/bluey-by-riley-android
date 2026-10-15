@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math';
@@ -54,6 +55,29 @@ class _DesktopHostViewState extends State<DesktopHostView>
   double _speechBorn = 0.0;
   final List<TrailPoint> _trailPoints = [];
   List<String> _connectedPhones = [];
+  List<String> _serverIps = [];
+
+  Future<void> _loadServerIps() async {
+    final ips = <String>[];
+    try {
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          if (!addr.isLoopback && addr.address != '127.0.0.1') {
+            ips.add(addr.address);
+          }
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _serverIps = ips;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -90,6 +114,7 @@ class _DesktopHostViewState extends State<DesktopHostView>
       }
     };
     _phoneServer.start();
+    _loadServerIps();
   }
 
   void _setupHotKeys() {
@@ -113,6 +138,8 @@ class _DesktopHostViewState extends State<DesktopHostView>
       _ticker!.dispose();
     }
     if (widget.enableServer) {
+      _phoneServer.onPhonesChanged = null;
+      _phoneServer.onRequest = null;
       _phoneServer.stop();
     }
     super.dispose();
@@ -420,10 +447,17 @@ class _DesktopHostViewState extends State<DesktopHostView>
                             const SizedBox(width: 6),
                             Text(
                               _connectedPhones.isEmpty
-                                  ? "Waiting for phone app..."
-                                  : "Phone connected: ${_connectedPhones.join(', ')}",
+                                  ? "Waiting for phone app... (IP: ${_serverIps.isNotEmpty ? _serverIps.first : '127.0.0.1'}:8080)"
+                                  : "Phone connected: ${_connectedPhones.join(', ')} (IP: ${_serverIps.isNotEmpty ? _serverIps.first : '127.0.0.1'}:8080)",
                               style: const TextStyle(color: Colors.white70, fontSize: 13),
                             ),
+                            if (_serverIps.length > 1) ...[
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: "All Server IPs: ${_serverIps.map((ip) => '$ip:8080').join(', ')}",
+                                child: const Icon(Icons.info_outline, size: 14, color: Colors.white54),
+                              ),
+                            ],
                           ],
                         ),
                       ),

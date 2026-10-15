@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'googly_protocol.dart';
 import 'line_connection.dart';
 
@@ -8,11 +9,17 @@ import 'line_connection.dart';
 class PhoneClient extends ChangeNotifier {
   static final PhoneClient _instance = PhoneClient._internal();
   factory PhoneClient() => _instance;
-  PhoneClient._internal();
+  PhoneClient._internal() {
+    _loadLastIp();
+  }
+
+  static const String _prefLastIpKey = 'last_connected_ip';
 
   LineConnection? _connection;
   bool _connected = false;
   String? _macName;
+  String? _lastManualIp;
+  String? _connectedIp;
   final List<String> _macs = [];
 
   void Function(FaceState face)? onFace;
@@ -20,11 +27,28 @@ class PhoneClient extends ChangeNotifier {
 
   bool get connected => _connected;
   String? get macName => _macName;
+  String? get lastManualIp => _lastManualIp;
+  String? get connectedIp => _connectedIp;
   List<String> get macs => List.unmodifiable(_macs);
 
   Timer? _discoveryTimer;
   Timer? _reconnectTimer;
   bool _isSearching = false;
+
+  Future<void> _loadLastIp() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _lastManualIp = prefs.getString(_prefLastIpKey);
+    } catch (_) {}
+  }
+
+  Future<void> _saveLastIp(String ip) async {
+    _lastManualIp = ip;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefLastIpKey, ip);
+    } catch (_) {}
+  }
 
   void start() {
     if (_isSearching) return;
@@ -39,13 +63,14 @@ class PhoneClient extends ChangeNotifier {
     _connection?.close();
     _connection = null;
     _connected = false;
+    _connectedIp = null;
     notifyListeners();
   }
 
   void _startDiscovery() {
     _discoveryTimer?.cancel();
-    _discoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_connected) {
+    _discoveryTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_connected && _isSearching) {
         _scanLocalNetwork();
       }
     });
@@ -53,7 +78,20 @@ class PhoneClient extends ChangeNotifier {
   }
 
   Future<void> _scanLocalNetwork() async {
-    final candidateHosts = <String>['127.0.0.1', 'localhost'];
+    if (_connected) return;
+
+    if (_lastManualIp == null) {
+      await _loadLastIp();
+    }
+
+    // Try last remembered IP first
+    if (_lastManualIp != null && _lastManualIp!.isNotEmpty) {
+      if (await _tryConnect(_lastManualIp!, 8080)) {
+        return;
+      }
+    }
+
+    final candidateHosts = <String>{'127.0.0.1', 'localhost'};
 
     try {
       final interfaces = await NetworkInterface.list(
@@ -66,14 +104,8 @@ class PhoneClient extends ChangeNotifier {
           final parts = ip.split('.');
           if (parts.length == 4 && parts[0] != '127') {
             final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-            // Probe common local IPs in subnet
-            candidateHosts.add('$subnet.1');
-            candidateHosts.add('$subnet.100');
-            for (var i = 2; i <= 254; i++) {
-              if (i == int.tryParse(parts[3])) continue;
-              if (i < 20 || (i >= 100 && i <= 120) || i > 250) {
-                candidateHosts.add('$subnet.$i');
-              }
+            for (var i = 1; i <= 254; i++) {
+              candidateHosts.add('$subnet.$i');
             }
           }
         }
@@ -82,9 +114,17 @@ class PhoneClient extends ChangeNotifier {
       debugPrint("Network interface lookup error: $e");
     }
 
-    for (final host in candidateHosts) {
+    final hostList = candidateHosts.toList();
+    const batchSize = 25;
+    for (var i = 0; i < hostList.length; i += batchSize) {
       if (_connected) break;
-      _tryConnect(host, 8080);
+      final batch = hostList.sublist(i, (i + batchSize < hostList.length) ? i + batchSize : hostList.length);
+      final results = await Future.wait(
+        batch.map((host) => _tryConnect(host, 8080)),
+      );
+      if (results.contains(true)) {
+        break;
+      }
     }
   }
 
@@ -92,19 +132,26 @@ class PhoneClient extends ChangeNotifier {
     if (_connected) return true;
 
     try {
-      final socket = await Socket.connect(host, port, timeout: const Duration(milliseconds: 600));
-      _setupConnection(socket);
+      final socket = await Socket.connect(host, port, timeout: const Duration(milliseconds: 450));
+      _setupConnection(socket, host);
+      await _saveLastIp(host);
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  void connectDirect(String host, {int port = 8080}) {
-    _tryConnect(host, port);
+  Future<bool> connectDirect(String host, {int port = 8080}) async {
+    final cleanHost = host.trim();
+    if (cleanHost.isEmpty) return false;
+    final success = await _tryConnect(cleanHost, port);
+    if (success) {
+      await _saveLastIp(cleanHost);
+    }
+    return success;
   }
 
-  void _setupConnection(Socket socket) {
+  void _setupConnection(Socket socket, String host) {
     _connection?.close();
     final conn = LineConnection(socket);
     _connection = conn;
@@ -114,6 +161,7 @@ class PhoneClient extends ChangeNotifier {
       if (!connected) {
         _connection = null;
         _macName = null;
+        _connectedIp = null;
         _scheduleReconnect();
       }
       notifyListeners();
@@ -138,6 +186,7 @@ class PhoneClient extends ChangeNotifier {
     };
 
     _connected = true;
+    _connectedIp = host;
     conn.send(Packet(hello: Platform.operatingSystem));
     notifyListeners();
   }
