@@ -1,3 +1,4 @@
+import 'pairing_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../graphics/blob_shape.dart';
@@ -114,6 +115,19 @@ class _BlueyAppViewState extends State<BlueyAppView> {
                                 fontFamily: 'IBMPlexSans',
                                 fontSize: 12,
                                 color: Color(Palette.inkSoft),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () => showManualPairingDialog(context),
+                              borderRadius: BorderRadius.circular(12),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2.0),
+                                child: Icon(
+                                  Icons.wifi_find,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
                               ),
                             ),
                           ],
