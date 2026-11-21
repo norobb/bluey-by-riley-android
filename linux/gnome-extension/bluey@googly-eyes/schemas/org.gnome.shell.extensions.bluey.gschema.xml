@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.bluey" path="/org/gnome/shell/extensions/bluey/">
+    <key name="stop" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;s']</default><summary>Stop his actions and pause focus</summary></key>
+    <key name="toggle-awake" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;space']</default><summary>Wake him up or put him to sleep</summary></key>
+    <key name="point-here" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;p']</default><summary>Point at the mouse position</summary></key>
+    <key name="toggle-follow" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;f']</default><summary>Toggle follow mouse</summary></key>
+    <key name="dock" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;d']</default><summary>Send his cursor home</summary></key>
+    <key name="toggle-hide" type="as"><default>['&lt;Control&gt;&lt;Alt&gt;h']</default><summary>Hide or show the overlay</summary></key>
+  </schema>
+</schemalist>

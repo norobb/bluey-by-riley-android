@@ -1,0 +1,8 @@
+{
+  "uuid": "bluey@googly-eyes",
+  "name": "Bluey Overlay",
+  "description": "Overlay, panel menu and hotkeys for the Bluey Linux host: his cursor and speech bubble, the focus countdown, and the pointer position Wayland only gives the shell.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "settings-schema": "org.gnome.shell.extensions.bluey",
+  "version": 1
+}

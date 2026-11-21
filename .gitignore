@@ -1,10 +1,22 @@
-.build/
-build/
-DerivedData/
-*.xcuserstate
-xcuserdata/
-.DS_Store
-# API keys never go in git
-Secrets.xcconfig
-*.env
-.env*
+# Android / Gradle
+android/**/build/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+*.iml
+.idea/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Python
+__pycache__/
+*.pyc
+
+# GNOME schema build output
+linux/gnome-extension/**/gschemas.compiled
+
+# Never commit credentials or pairing secrets
+keys.json
+pairing.json
