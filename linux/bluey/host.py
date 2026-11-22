@@ -5,6 +5,7 @@ The phone runs the Realtime session; this side mints its key, runs its tools in 
 from __future__ import annotations
 
 import asyncio
+import re
 import base64
 import json
 import time
@@ -18,7 +19,7 @@ from .overlay import Overlay
 from .screen import Snapshot, snapshot
 
 REPORT_MARKER = "\n---REPORT---\n"
-ACTIONS = {"move_mouse", "click", "type_text", "press_keys", "scroll", "drag", "open_app", "open_url"}
+ACTIONS = {"move_mouse", "click", "draw", "type_text", "press_keys", "scroll", "drag", "open_app", "open_url"}
 MIN_HOLD, IDLE_HOME = 2.2, 5.0
 
 
@@ -341,6 +342,26 @@ class Host:
                 await self._aim(x, y)
                 await asyncio.sleep(0.3)
                 return await self.look(f"Moved the mouse to {'that spot' if label == 'that spot' else repr(label)}.")
+            if name == "draw":
+                strokes = parse_strokes(args.get("strokes"))
+                if not strokes:
+                    return "Give me strokes as grid points like \"100,200 150,180\".", None
+                for stroke in strokes:
+                    pts = [self._grid(x, y) for x, y in stroke]
+                    await self._fly(*pts[0])
+                    await self._aim(*pts[0])
+                    await control.button(True)
+                    await asyncio.sleep(0.05)
+                    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+                        n = max(int(max(abs(bx - ax), abs(by - ay)) / 8), 1)  # ~8 px steps so apps see a smooth line
+                        for i in range(1, n + 1):
+                            await self.overlay.warp(ax + (bx - ax) * i / n, ay + (by - ay) * i / n)
+                            await asyncio.sleep(0.008)
+                    await asyncio.sleep(0.05)
+                    await control.button(False)
+                    self.cursor = pts[-1]
+                await asyncio.sleep(0.3)
+                return await self.look(f"Drew {len(strokes)} stroke{'s' if len(strokes) > 1 else ''}.")
             if name == "click":
                 spot = self._spot(args, "target_id", "x", "y")
                 if not spot:
@@ -424,6 +445,18 @@ class Host:
             self.hold_until = time.monotonic() + 1.5
             if not self.speaking:
                 self.quiet_since = time.monotonic()
+
+
+def parse_strokes(raw) -> list[list[tuple[float, float]]]:
+    """["100,200 150,180", …] → point lists; drops malformed points and capped so a bad call can't run forever."""
+    out = []
+    for stroke in (raw if isinstance(raw, list) else [])[:40]:
+        pts = []
+        for m in re.finditer(r"(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)", str(stroke)):
+            pts.append((float(m.group(1)), float(m.group(2))))
+        if pts:
+            out.append((pts * 2)[:max(len(pts), 2)][:400])  # a single point becomes a dot
+    return out
 
 
 def focus_countdown(session) -> str:
