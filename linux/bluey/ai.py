@@ -125,7 +125,7 @@ web_research. In that one response: point at the relevant thing on screen if the
 line that ends with "doing some research…", then call web_research. The report appears in a card on the \
 screen; afterwards reply with just one short takeaway line."""
 
-COMPUTER_GUIDE = """You can also use the computer for the user with click, type_text, press_keys, scroll, drag, open_app and \
+COMPUTER_GUIDE = """You can also use the computer for the user with move_mouse, click, type_text, press_keys, scroll, drag, open_app and \
 open_url. Only do things when the user asks you to; explaining is not doing. When asked to do something, just \
 do it silently, right away: no "okay", no "I'll set that up", no narration between steps. Work step by step \
 (act, check the screen you get back, act again) and reply only at the end, in a few words, or if you're stuck. \
@@ -195,6 +195,8 @@ def tools(codex: bool, computer: bool) -> list[dict]:
     if computer:
         target = {"type": "string", "description": "An id from look_at_screen (L or W). Leave out to use x and y."}
         t += [
+            _tool("move_mouse", "Move the real mouse pointer somewhere and leave it there (hover, show a spot, open a hover menu). Prefer a target id; use x and y on the 0-1000 grid otherwise. Returns the screen afterwards.",
+                  {"target_id": target, "x": GX, "y": GY}),
             _tool("click", "Click something on the screen with your cursor. Prefer a target id; use x and y on the 0-1000 grid for things without an id. Returns the screen afterwards.",
                   {"target_id": target, "x": GX, "y": GY, "double": {"type": "boolean", "description": "Double-click instead of a single click."},
                    "right": {"type": "boolean", "description": "Right-click (for context menus)."}}),

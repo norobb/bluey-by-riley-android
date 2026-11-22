@@ -288,7 +288,7 @@ fun FocusFaceHUD(focus: FocusClient, link: MacLink, live: LiveVoice, open: () ->
     }
 }
 
-/** Speaker button top-right: volume, voice on/off, say hi, choose computer (iOS SoundButton). */
+/** Speaker button top-right: volume, say hi, choose computer (iOS SoundButton). */
 @Composable
 fun SoundButton(link: MacLink, live: LiveVoice) {
     var open by remember { mutableStateOf(false) }
@@ -323,14 +323,6 @@ private fun VolumeControls(live: LiveVoice, volume: Double, changed: (Double) ->
         }
         Slider(volume.toFloat(), { changed(it.toDouble()); live.volume = it.toDouble() }, Modifier.height(32.dp).semantics { contentDescription = "Volume" },
             colors = SliderDefaults.colors(thumbColor = Ui.Text1, activeTrackColor = Ui.Accent, inactiveTrackColor = Ui.Raised))
-        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(Ui.Control).clickable(role = Role.Switch) { live.changeSpeakAloud(!live.speakAloud) },
-            verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Speak replies", style = body(14), color = Ui.Text1)
-                Text(if (live.speakAloud) "He answers out loud" else "Bubble and chirp only", style = body(12), color = Ui.Text3)
-            }
-            Switch(live.speakAloud, null, colors = SwitchDefaults.colors(checkedTrackColor = Ui.Accent, checkedThumbColor = Ui.Text1))
-        }
     }
 }
 

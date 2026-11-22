@@ -18,7 +18,7 @@ from .overlay import Overlay
 from .screen import Snapshot, snapshot
 
 REPORT_MARKER = "\n---REPORT---\n"
-ACTIONS = {"click", "type_text", "press_keys", "scroll", "drag", "open_app", "open_url"}
+ACTIONS = {"move_mouse", "click", "type_text", "press_keys", "scroll", "drag", "open_app", "open_url"}
 MIN_HOLD, IDLE_HOME = 2.2, 5.0
 
 
@@ -319,14 +319,28 @@ class Host:
         raise control.ControlError("The pointer kept moving while I aimed, so I didn't click. Ask the user to keep the mouse still.")
 
     async def _fly(self, x, y):
+        """His cursor flies there and the real mouse pointer glides along with it (and stays there)."""
         self.queue, self.cursor = [], (x, y)
+        await self.overlay.refresh()
+        sx, sy = self.overlay.pointer
         wait = await self.overlay.fly(x, y)
-        await asyncio.sleep(wait + 0.05)
+        steps = max(int(wait / 0.016), 1)
+        for i in range(1, steps + 1):
+            await self.overlay.warp(sx + (x - sx) * i / steps, sy + (y - sy) * i / steps)
+            await asyncio.sleep(wait / steps)
+        await asyncio.sleep(0.05)
 
     async def _action(self, name: str, args: dict) -> tuple[str, str | None]:
-        await self.overlay.refresh()
-        saved = self.overlay.pointer
         try:
+            if name == "move_mouse":
+                spot = self._spot(args, "target_id", "x", "y")
+                if not spot:
+                    return "Tell me where to move the mouse: a target id from look_at_screen, or x and y.", None
+                (x, y), label = spot
+                await self._fly(x, y)
+                await self._aim(x, y)
+                await asyncio.sleep(0.3)
+                return await self.look(f"Moved the mouse to {'that spot' if label == 'that spot' else repr(label)}.")
             if name == "click":
                 spot = self._spot(args, "target_id", "x", "y")
                 if not spot:
@@ -337,9 +351,7 @@ class Host:
                 await self._aim(x, y)
                 await asyncio.sleep(0.09)
                 await control.click(right, count)
-                await asyncio.sleep(0.06)
-                await self.overlay.warp(*saved)  # hand your pointer back where you left it
-                await asyncio.sleep(0.38)
+                await asyncio.sleep(0.44)
                 verb = "Right-clicked" if right else "Double-clicked" if count == 2 else "Clicked"
                 return await self.look(f"{verb} {'there' if label == 'that spot' else repr(label)}.")
             if name == "type_text":
@@ -373,7 +385,6 @@ class Host:
                 await self._aim(x, y)
                 await self.overlay.flash(arrow)
                 await control.scroll(dx, dy)
-                await self.overlay.warp(*saved)
                 await asyncio.sleep(0.28)
                 return await self.look(f"Scrolled {d}.")
             if name == "drag":
@@ -393,9 +404,7 @@ class Host:
                 await asyncio.sleep(0.08)
                 await control.button(False)
                 self.cursor = (tx, ty)
-                await asyncio.sleep(0.06)
-                await self.overlay.warp(*saved)
-                await asyncio.sleep(0.28)
+                await asyncio.sleep(0.34)
                 return await self.look("Dragged it.")
             if name == "open_app":
                 app = str(args.get("name", "")).strip()

@@ -68,11 +68,7 @@ class LiveVoice(private val context: Context) {
     private val prefs = context.getSharedPreferences("bluey", Context.MODE_PRIVATE)
     var volume: Double
         get() = prefs.getFloat("volume", 1f).toDouble()
-        set(v) { prefs.edit().putFloat("volume", v.toFloat()).apply(); track?.setVolume(v.toFloat()); speaker.setVolume(v.toFloat()) }
-    /** Speak replies out loud with Gemini's voice; off = the original silent bubble-and-chirp style. */
-    var speakAloud by mutableStateOf(prefs.getBoolean("speakAloud", true)); private set
-    fun changeSpeakAloud(on: Boolean) { speakAloud = on; prefs.edit().putBoolean("speakAloud", on).apply(); if (!on) speaker.stop() }
-    private val speaker = Speaker { lvl -> level = lvl }.also { it.onDrained = { main.post { finishIfQuiet() } } }
+        set(v) { prefs.edit().putFloat("volume", v.toFloat()).apply(); track?.setVolume(v.toFloat()) }
     private val clearCaption = Runnable { caption = "" }
 
     private val main = Handler(Looper.getMainLooper())
@@ -143,7 +139,7 @@ class LiveVoice(private val context: Context) {
         voiceRequest++
         turnAudio.begin()
         stopAudio()
-        speaker.stop(); caption = ""
+        caption = ""
         transcript = ""; heard = ""; pendingChirps = 0; responseActive = false; sleepAfterReply = false
         holding = false; askWhenReady = false; toolsRunning = 0; level = 0.0
         codexNotes.clear()
@@ -181,7 +177,6 @@ class LiveVoice(private val context: Context) {
         turnAudio.begin()
         voiceRequest++
         awaitingReply = false
-        speaker.stop()  // holding interrupts him, like on iOS
         main.removeCallbacks(clearCaption); caption = ""
         feedback = "Listening… let go when you're done."
         onCaption?.invoke("", false)
@@ -376,16 +371,7 @@ class LiveVoice(private val context: Context) {
             onUserWords?.invoke(currentItem, heard, true)
             feedback = "Heard: ${heard.trim()}"
         }
-        if (speakAloud) sc.optJSONObject("modelTurn")?.optJSONArray("parts")?.let { parts ->
-            for (i in 0 until parts.length()) {
-                val data = parts.optJSONObject(i)?.optJSONObject("inlineData") ?: continue
-                val mime = data.optString("mimeType")
-                if (!mime.startsWith("audio/pcm")) continue
-                val rate = Regex("rate=(\\d+)").find(mime)?.groupValues?.get(1)?.toIntOrNull() ?: 24_000
-                if (state != State.speaking) moveTo(State.speaking)
-                speaker.play(Base64.getDecoder().decode(data.optString("data")), rate, volume.toFloat())
-            }
-        }
+        // Bluey never talks: Gemini's audio is dropped, only its transcription becomes the bubble (plus chirps).
         sc.optJSONObject("outputTranscription")?.optString("text")?.takeIf { it.isNotEmpty() }?.let { delta ->
             awaitingReply = false
             if (!responseActive) beginResponse()
@@ -393,7 +379,7 @@ class LiveVoice(private val context: Context) {
             if (!chirpedThisResponse && transcript.isNotBlank()) {
                 chirpedThisResponse = true
                 moveTo(State.speaking)
-                if (!speakAloud) chirp(transcript.split(" ").count { it.isNotEmpty() }.coerceIn(3, 5))
+                chirp(transcript.split(" ").count { it.isNotEmpty() }.coerceIn(3, 5))
             }
             main.removeCallbacks(clearCaption); caption = transcript.trim()
             onCaption?.invoke(transcript, false)
@@ -442,7 +428,7 @@ class LiveVoice(private val context: Context) {
     }
 
     private fun finishIfQuiet() {
-        if (pendingChirps != 0 || responseActive || toolsRunning != 0 || speaker.busy) return
+        if (pendingChirps != 0 || responseActive || toolsRunning != 0) return
         if (sleepAfterReply) { sleep(); return }
         if (reconnectWhenQuiet && !holding) { reconnect(); return }
         if (state == State.speaking || state == State.thinking) moveTo(if (holding) State.asking else State.listening)
@@ -578,63 +564,5 @@ class VoiceTurnBuffer(private val minBytes: Int = 3200, private val maxBytes: In
     fun connected(): List<ByteArray> {
         val data = pending.toList(); pending.clear(); pendingBytes = 0
         return if (overflowed) emptyList() else data
-    }
-}
-
-/** Streams Gemini's spoken reply (PCM16 mono) to the speaker on its own thread and reports loudness for the mouth. */
-class Speaker(private val onLevel: (Double) -> Unit) {
-    var onDrained: (() -> Unit)? = null
-    private val queue = java.util.concurrent.LinkedBlockingQueue<ByteArray>()
-    private var track: AudioTrack? = null
-    private var rate = 0
-    private var worker: Thread? = null
-    @Volatile private var generation = 0
-    @Volatile var busy = false; private set
-
-    fun setVolume(v: Float) { track?.setVolume(v) }
-
-    @Synchronized fun play(pcm: ByteArray, sampleRate: Int, volume: Float) {
-        if (track == null || rate != sampleRate) {
-            track?.release()
-            rate = sampleRate
-            track = AudioTrack.Builder()
-                .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(sampleRate)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
-                .setTransferMode(AudioTrack.MODE_STREAM).build()
-        }
-        track!!.setVolume(volume)
-        busy = true
-        queue.put(pcm)
-        if (worker?.isAlive != true) {
-            val gen = generation
-            worker = Thread({ drain(gen) }, "bluey-speech").apply { start() }
-        }
-    }
-
-    private fun drain(gen: Int) {
-        val t = synchronized(this) { track } ?: return
-        t.play()
-        while (gen == generation) {
-            val chunk = queue.poll(400, TimeUnit.MILLISECONDS) ?: break
-            var sum = 0.0
-            for (i in 0 until chunk.size / 2) {
-                val s = ((chunk[2 * i + 1].toInt() shl 8) or (chunk[2 * i].toInt() and 0xFF)) / 32768.0; sum += s * s
-            }
-            onLevel(min(1.0, sqrt(sum / maxOf(1, chunk.size / 2)) * 5))
-            t.write(chunk, 0, chunk.size, AudioTrack.WRITE_BLOCKING)
-        }
-        onLevel(0.0)
-        if (gen == generation) { busy = false; onDrained?.invoke() }
-    }
-
-    /** Interrupt: drop what's queued and silence the track. */
-    @Synchronized fun stop() {
-        generation++
-        queue.clear()
-        track?.let { runCatching { it.pause(); it.flush() } }
-        busy = false
-        onLevel(0.0)
     }
 }

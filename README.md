@@ -21,13 +21,13 @@ byte-for-byte compatible with the original apps.
 - **Face** – full-screen landscape character with spring-driven eyes, blinks and moods. His gaze follows your
   mouse on the computer, and his mouth moves while he talks.
 - **Hold to ask** – hold his face, speak, let go. Speech is transcribed **on your computer** with
-  Parakeet when available, so your voice never leaves your network. He answers
-  out loud and in a speech bubble on the phone and next to his own cursor on screen.
+  Parakeet when available, so your voice never leaves your network. He never talks out loud:
+  he answers with a chirp and a speech bubble on the phone and next to his own cursor on screen.
 - **Focus sessions** – say or type a task and a duration. The computer owns the clock, looks at the screen every
   30 seconds and nudges you after repeated off-task checks. Each session ends as a timeline of on-task and off-task
   checks you can inspect.
-- **Using the computer** – on request he can look at the screen, point at things, research the web, click, type,
-  scroll, open apps and links, and hand coding jobs to Codex.
+- **Using the computer** – on request he can look at the screen, point at things, research the web, move the real mouse
+  pointer, click, type, scroll, open apps and links, and hand coding jobs to Codex.
 - **Conversations** – every voice session is kept on the phone and written to `~/Documents/Bluey Notes` on the
   computer as Markdown that any agent can read.
 

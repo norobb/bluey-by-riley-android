@@ -34,6 +34,7 @@ Firewall: the phone connects to TCP port 47321 (fixed, `--port`). With ufw's def
 | ScreenCaptureKit | XDG portal Screenshot (non-interactive; the file is deleted right after reading) |
 | Vision OCR | Tesseract if installed, otherwise none (the model points by grid) |
 | CGEvent click/keys/scroll | Extension `Warp` for position + `ydotool` for buttons, keys, wheel, typing |
+| (Mac warps the pointer back after clicks) | The real pointer glides with his cursor and stays where he clicked; extra tool `move_mouse` to hover/park it |
 | Accessibility controls (C ids) | Not ported (AT-SPI on Wayland gives no reliable screen coordinates) |
 | OpenAI Decisions/Responses/Realtime/transcription | Gemini `generateContent` (JSON schema, Google Search grounding, audio) and Live API tokens (`ai.py`) |
 | (voice turns streamed to OpenAI) | Held speech transcribed locally by Parakeet Ultra via `voxtype transcribe` (`stt.py`), only text goes to Gemini |
