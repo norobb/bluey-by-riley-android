@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import gi
@@ -68,7 +69,8 @@ async def _ocr(pix: GdkPixbuf.Pixbuf, factor: float) -> list[tuple[dict, list[di
     if not shutil.which("tesseract"):
         return []
     ok, png = pix.save_to_bufferv("png", [], [])
-    proc = await asyncio.create_subprocess_exec("tesseract", "stdin", "stdout", "tsv", stdin=asyncio.subprocess.PIPE,
+    langs = ["-l", "deu+eng"] if Path("/usr/share/tessdata/deu.traineddata").exists() else []  # German UI text too
+    proc = await asyncio.create_subprocess_exec("tesseract", "stdin", "stdout", *langs, "tsv", stdin=asyncio.subprocess.PIPE,
                                                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
     out, _ = await proc.communicate(bytes(png))
     lines: dict[tuple, list[dict]] = {}

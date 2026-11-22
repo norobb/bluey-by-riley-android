@@ -129,7 +129,8 @@ screen; afterwards reply with just one short takeaway line."""
 COMPUTER_GUIDE = """You can also use the computer for the user with move_mouse, click, draw, type_text, press_keys, scroll, drag, open_app and \
 open_url. Only do things when the user asks you to; explaining is not doing. When asked to do something, just \
 do it silently, right away: no "okay", no "I'll set that up", no narration between steps. Work step by step \
-(act, check the screen you get back, act again) and reply only at the end, in a few words, or if you're stuck. \
+(act, check the screen you get back, act again; move_mouse, type_text, press_keys and scroll return no \
+screen, so chain them and call look_at_screen when you need to check the result) and reply only at the end, in a few words, or if you're stuck. \
 Prefer reliable routes: open_app and open_url instead of hunting for icons, shortcuts you're sure of, and \
 clicking controls by id. Click a field before typing into it. \
 To draw or sketch, first pick a drawing tool in the app (e.g. Blender: Annotate tool or Grease Pencil draw mode; \
@@ -198,7 +199,7 @@ def tools(codex: bool, computer: bool) -> list[dict]:
     if computer:
         target = {"type": "string", "description": "An id from look_at_screen (L or W). Leave out to use x and y."}
         t += [
-            _tool("move_mouse", "Move the real mouse pointer somewhere and leave it there (hover, show a spot, open a hover menu). Prefer a target id; use x and y on the 0-1000 grid otherwise. Returns the screen afterwards.",
+            _tool("move_mouse", "Move the real mouse pointer somewhere and leave it there (hover, show a spot, open a hover menu). Prefer a target id; use x and y on the 0-1000 grid otherwise.",
                   {"target_id": target, "x": GX, "y": GY}),
             _tool("draw", "Draw freehand with the mouse button held down: shapes, lines, letters, sketches. Pick a drawing tool in the app first. Returns the screen afterwards.",
                   {"strokes": {"type": "array", "description": "Each stroke is one continuous line, written as points on the 0-1000 grid like \"100,200 150,180 200,200\". Use many points for curves (a circle needs about 24).",
@@ -206,11 +207,11 @@ def tools(codex: bool, computer: bool) -> list[dict]:
             _tool("click", "Click something on the screen with your cursor. Prefer a target id; use x and y on the 0-1000 grid for things without an id. Returns the screen afterwards.",
                   {"target_id": target, "x": GX, "y": GY, "double": {"type": "boolean", "description": "Double-click instead of a single click."},
                    "right": {"type": "boolean", "description": "Right-click (for context menus)."}}),
-            _tool("type_text", "Type text into whatever is focused, like a keyboard. Click the field first. A newline presses Return. Returns the screen afterwards if press_return is true.",
+            _tool("type_text", "Type text into whatever is focused, like a keyboard. Click the field first. A newline presses Return.",
                   {"text": {"type": "string"}, "press_return": {"type": "boolean", "description": "Press Return after typing (e.g. to search or submit)."}}, ["text"]),
-            _tool("press_keys", "Press a key or keyboard shortcut, like \"ctrl+t\", \"ctrl+l\", \"return\", \"escape\", \"tab\", \"down\" or \"ctrl+shift+n\". Returns the screen afterwards.",
+            _tool("press_keys", "Press a key or keyboard shortcut, like \"ctrl+t\", \"ctrl+l\", \"return\", \"escape\", \"tab\", \"down\" or \"ctrl+shift+n\".",
                   {"keys": {"type": "string"}}, ["keys"]),
-            _tool("scroll", "Scroll the page under a target or spot (or the middle of the screen). Returns the screen afterwards.",
+            _tool("scroll", "Scroll the page under a target or spot (or the middle of the screen).",
                   {"direction": {"type": "string", "enum": ["up", "down", "left", "right"]},
                    "amount": {"type": "number", "description": "How far, 1 (a little) to 10 (a lot). Default 3."}, "target_id": target, "x": GX, "y": GY}, ["direction"]),
             _tool("drag", "Drag from one place to another (move a shape, select text, drag a slider). Use ids or 0-1000 grid positions. Returns the screen afterwards.",

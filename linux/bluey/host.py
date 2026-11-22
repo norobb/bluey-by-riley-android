@@ -339,8 +339,7 @@ class Host:
                 (x, y), label = spot
                 await self._fly(x, y)
                 await self._aim(x, y)
-                await asyncio.sleep(0.3)
-                return await self.look(f"Moved the mouse to {'that spot' if label == 'that spot' else repr(label)}.")
+                return f"Moved the mouse to {'that spot' if label == 'that spot' else repr(label)}.", None
             if name == "draw":
                 strokes = ai.parse_strokes(args.get("strokes"))
                 if not strokes:
@@ -384,15 +383,15 @@ class Host:
                     await asyncio.sleep(0.12)
                     await control.press("return")
                     await self.overlay.flash("↩")
-                    await asyncio.sleep(0.55)
-                    return await self.look("Typed it and pressed Return.")
+                    await asyncio.sleep(0.2)
+                    return "Typed it and pressed Return.", None
                 return "Typed it.", None
             if name == "press_keys":
                 keys = str(args.get("keys", "")).strip()
                 label = await control.press(keys)
                 await self.overlay.flash(label)
-                await asyncio.sleep(0.38)
-                return await self.look(f"Pressed {keys}.")
+                await asyncio.sleep(0.15)  # let the UI react before the next key or typing
+                return f"Pressed {keys}.", None
             if name == "scroll":
                 d = str(args.get("direction", "down")).lower()
                 amount = min(max(_num(args.get("amount")) or 3, 1), 10)
@@ -405,8 +404,7 @@ class Host:
                 await self._aim(x, y)
                 await self.overlay.flash(arrow)
                 await control.scroll(dx, dy)
-                await asyncio.sleep(0.28)
-                return await self.look(f"Scrolled {d}.")
+                return f"Scrolled {d}.", None
             if name == "drag":
                 a = self._spot(args, "from_id", "from_x", "from_y")
                 b = self._spot(args, "to_id", "to_x", "to_y")
