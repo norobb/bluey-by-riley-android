@@ -9,6 +9,8 @@ jobs:
   android:
     name: Android build and unit tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # to refresh the rolling latest-ci pre-release
     defaults:
       run:
         working-directory: android
@@ -25,6 +27,17 @@ jobs:
         with:
           name: bluey-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+      # Fixed download link for the README button: every push to main replaces the APK in the latest-ci pre-release.
+      - name: Publish to latest-ci pre-release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk bluey-ci-debug.apk
+          git tag -f latest-ci "$GITHUB_SHA" && git push -f origin latest-ci
+          gh release view latest-ci >/dev/null 2>&1 || gh release create latest-ci --prerelease --latest=false \
+            --title "Latest CI build" --notes "Debug APK from the newest commit on main, rebuilt on every push. For a signed build use the latest release."
+          gh release upload latest-ci bluey-ci-debug.apk --clobber
 
   linux-host:
     name: Linux host tests

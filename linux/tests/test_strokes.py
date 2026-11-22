@@ -1,6 +1,6 @@
 import unittest
 
-from bluey.host import parse_strokes
+from bluey.ai import parse_strokes
 
 
 class StrokesTest(unittest.TestCase):

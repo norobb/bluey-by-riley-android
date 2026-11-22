@@ -223,6 +223,18 @@ def tools(codex: bool, computer: bool) -> list[dict]:
     return t
 
 
+def parse_strokes(raw) -> list[list[tuple[float, float]]]:
+    """["100,200 150,180", …] → point lists; drops malformed points and capped so a bad call can't run forever."""
+    out = []
+    for stroke in (raw if isinstance(raw, list) else [])[:40]:
+        pts = []
+        for m in re.finditer(r"(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)", str(stroke)):
+            pts.append((float(m.group(1)), float(m.group(2))))
+        if pts:
+            out.append((pts * 2)[:max(len(pts), 2)][:400])  # a single point becomes a dot
+    return out
+
+
 def personality() -> str:
     saved = (read_json(STATE / "settings.json") or {}).get("personality", "")
     return saved.strip() if isinstance(saved, str) and saved.strip() else DEFAULT_PERSONALITY

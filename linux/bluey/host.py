@@ -5,7 +5,6 @@ The phone runs the Realtime session; this side mints its key, runs its tools in 
 from __future__ import annotations
 
 import asyncio
-import re
 import base64
 import json
 import time
@@ -343,7 +342,7 @@ class Host:
                 await asyncio.sleep(0.3)
                 return await self.look(f"Moved the mouse to {'that spot' if label == 'that spot' else repr(label)}.")
             if name == "draw":
-                strokes = parse_strokes(args.get("strokes"))
+                strokes = ai.parse_strokes(args.get("strokes"))
                 if not strokes:
                     return "Give me strokes as grid points like \"100,200 150,180\".", None
                 for stroke in strokes:
@@ -445,18 +444,6 @@ class Host:
             self.hold_until = time.monotonic() + 1.5
             if not self.speaking:
                 self.quiet_since = time.monotonic()
-
-
-def parse_strokes(raw) -> list[list[tuple[float, float]]]:
-    """["100,200 150,180", …] → point lists; drops malformed points and capped so a bad call can't run forever."""
-    out = []
-    for stroke in (raw if isinstance(raw, list) else [])[:40]:
-        pts = []
-        for m in re.finditer(r"(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)", str(stroke)):
-            pts.append((float(m.group(1)), float(m.group(2))))
-        if pts:
-            out.append((pts * 2)[:max(len(pts), 2)][:400])  # a single point becomes a dot
-    return out
 
 
 def focus_countdown(session) -> str:
