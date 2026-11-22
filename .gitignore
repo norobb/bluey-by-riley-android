@@ -18,5 +18,6 @@ __pycache__/
 linux/gnome-extension/**/gschemas.compiled
 
 # Never commit credentials or pairing secrets
+keystore.properties
 keys.json
 pairing.json
