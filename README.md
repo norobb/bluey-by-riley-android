@@ -1,6 +1,6 @@
 # Bluey for Android and Linux
 
-[![Download latest CI APK](https://img.shields.io/badge/Download-latest%20CI%20APK-3DDC84?logo=android&logoColor=white)](https://github.com/norobb/bluey-by-riley-android/releases/download/latest-ci/bluey-ci-debug.apk)
+[![Download latest CI APK](https://img.shields.io/badge/Download-latest%20CI%20APK-3DDC84?logo=android&logoColor=white)](https://github.com/norobb/bluey-by-riley-android/releases/download/latest-ci/bluey-ci.apk)
 [![Latest release](https://img.shields.io/github/v/release/norobb/bluey-by-riley-android?label=signed%20release)](https://github.com/norobb/bluey-by-riley-android/releases/latest)
 
 A blueberry focus friend that lives on your phone, propped up under your monitor. His googly eyes follow your mouse,
