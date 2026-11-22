@@ -1,0 +1,7 @@
+post_install() {
+  echo "==> Bluey: run \`bluey setup\` as your user (not root) to enable the GNOME extension, ydotool and autostart."
+}
+
+post_upgrade() {
+  echo "==> Bluey updated: restart it with \`systemctl --user restart bluey\`."
+}

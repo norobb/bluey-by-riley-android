@@ -1,6 +1,7 @@
 # Bluey for Android and Linux
 
 [![Download latest CI APK](https://img.shields.io/badge/Download-latest%20CI%20APK-3DDC84?logo=android&logoColor=white)](https://github.com/norobb/bluey-by-riley-android/releases/download/latest-ci/bluey-ci.apk)
+[![Arch package](https://img.shields.io/badge/Arch-pacman%20package-1793D1?logo=archlinux&logoColor=white)](#arch-linux-one-command)
 [![Latest release](https://img.shields.io/github/v/release/norobb/bluey-by-riley-android?label=signed%20release)](https://github.com/norobb/bluey-by-riley-android/releases/latest)
 
 A blueberry focus friend that lives on your phone, propped up under your monitor. His googly eyes follow your mouse,
@@ -74,6 +75,20 @@ The full protocol, command list and state machines are in [docs/PROTOCOL.md](doc
 
 ### 1. Linux host
 
+#### Arch Linux (one command)
+
+CI builds a pacman package from every push to `main`:
+
+```sh
+sudo pacman -U https://github.com/norobb/bluey-by-riley-android/releases/download/latest-ci/bluey-git-latest-any.pkg.tar.zst
+bluey setup     # as your user: enables the GNOME extension, ydotool and autostart
+```
+
+Then log out and back in once and choose **Pair phone (QR)…** in Bluey's top-bar menu. To update, run the same
+`pacman -U` command again. Prefer building it yourself? `cd linux/packaging/aur && makepkg -si` uses the same PKGBUILD.
+
+#### Other distributions (from source)
+
 Needs GNOME on Wayland, Python 3.11+, PyGObject with GTK 4 and libadwaita, `python-cryptography`, `avahi`,
 `qrencode` and `ydotool` (for computer control). Optional: `codex`, `tesseract` (screen text), and
 Voxtype configured with the Parakeet engine for local speech recognition.
@@ -100,7 +115,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Open Bluey, tap **Scan pairing code** and scan the QR code from the computer. Both devices must be on the same network.
-CI builds a debug APK on every push; download it from the latest workflow run.
+Or skip the build: the **Download latest CI APK** button at the top is signed with the release key and updates the
+installed app in place.
 
 ## Tests
 

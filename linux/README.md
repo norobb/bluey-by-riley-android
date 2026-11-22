@@ -11,6 +11,9 @@ python3 -m bluey.app               # afterwards
 python3 -m unittest discover -s tests
 ```
 
+Packaged install (Arch): `packaging/aur/PKGBUILD` installs to `/usr/lib/bluey`, `/usr/bin/bluey`, a user unit and the
+extension system-wide; `bluey setup` then does the per-user steps (extension, ydotool, autostart).
+
 Autostart: user unit `~/.config/systemd/user/bluey.service` (enabled for `graphical-session.target`).
 `systemctl --user restart bluey`, logs with `journalctl --user -u bluey -f`.
 

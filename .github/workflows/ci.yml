@@ -66,3 +66,41 @@ jobs:
           python-version: "3.12"
       - run: pip install cryptography
       - run: python -m unittest discover -s tests -v
+
+  arch-package:
+    name: Arch package
+    needs: linux-host
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    permissions:
+      contents: write  # to refresh the package in the latest-ci pre-release
+    steps:
+      # git must exist before checkout, or the checkout has no history for pkgver.
+      - run: pacman -Syu --noconfirm --needed base-devel git github-cli python python-cryptography
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Build this exact commit with the same PKGBUILD as the AUR (dependencies aren't needed to build: -d).
+      - name: Build package
+        run: |
+          git config --global --add safe.directory '*'
+          useradd -m builder
+          sudo -u builder git config --global --add safe.directory '*'
+          install -d -o builder /tmp/build
+          cp linux/packaging/aur/PKGBUILD linux/packaging/aur/bluey.install /tmp/build/
+          sed -i "s|^source=.*|source=(\"bluey::git+file://$GITHUB_WORKSPACE#commit=$GITHUB_SHA\")|" /tmp/build/PKGBUILD
+          chown builder /tmp/build/*
+          cd /tmp/build && sudo -u builder makepkg -d --noconfirm
+          cp /tmp/build/bluey-git-*.pkg.tar.zst "$GITHUB_WORKSPACE/bluey-git-latest-any.pkg.tar.zst"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bluey-arch-package
+          path: bluey-git-latest-any.pkg.tar.zst
+      # Fixed link: sudo pacman -U https://github.com/<repo>/releases/download/latest-ci/bluey-git-latest-any.pkg.tar.zst
+      - name: Publish to latest-ci pre-release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view latest-ci -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || sleep 120  # the Android job creates it on the first run
+          gh release upload latest-ci bluey-git-latest-any.pkg.tar.zst --clobber -R "$GITHUB_REPOSITORY"

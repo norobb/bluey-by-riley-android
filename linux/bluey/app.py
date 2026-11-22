@@ -178,7 +178,10 @@ class App:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Bluey host for Linux")
+    if sys.argv[1:2] == ["setup"]:
+        from .setup import run
+        sys.exit(run())
+    ap = argparse.ArgumentParser(description="Bluey host for Linux. `bluey setup` enables the extension and autostart.")
     ap.add_argument("--pair", action="store_true", help="show the pairing QR")
     ap.add_argument("--port", type=int, default=47321, help="TCP port (fixed so a firewall rule can allow it)")
     ap.add_argument("--name", default=socket.gethostname())

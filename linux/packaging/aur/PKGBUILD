@@ -1,0 +1,76 @@
+# Maintainer: norobb <https://github.com/norobb>
+pkgname=bluey-git
+_pkgname=bluey
+pkgver=0.1.0.r5.g748d885
+pkgrel=1
+pkgdesc="Linux (GNOME/Wayland) host for Bluey, a googly-eyed focus friend on your phone (Bluey by Riley port)"
+arch=(any)
+url="https://github.com/norobb/bluey-by-riley-android"
+license=(Unlicense)
+depends=(
+  python
+  python-gobject
+  python-cryptography
+  gtk4
+  libadwaita
+  avahi
+  xdg-desktop-portal-gnome
+  gnome-shell
+)
+makedepends=(git)
+optdepends=(
+  'ydotool: let Bluey click, type and scroll (computer control)'
+  'qrencode: show the pairing code as a QR'
+  'tesseract: read on-screen text for precise clicks'
+  'tesseract-data-eng: English on-screen text'
+  'tesseract-data-deu: German on-screen text'
+)
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+install=bluey.install
+source=("$_pkgname::git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$_pkgname"
+  git describe --long --tags --match 'v*' | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+check() {
+  cd "$_pkgname/linux"
+  python -m unittest discover -s tests
+}
+
+package() {
+  cd "$_pkgname/linux"
+  install -d "$pkgdir/usr/lib/$_pkgname"
+  cp -r bluey "$pkgdir/usr/lib/$_pkgname/"
+  find "$pkgdir/usr/lib/$_pkgname" -name __pycache__ -prune -exec rm -rf {} +
+  python -m compileall -q -d "/usr/lib/$_pkgname" "$pkgdir/usr/lib/$_pkgname"
+
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/$_pkgname" <<'SH'
+#!/bin/sh
+PYTHONPATH=/usr/lib/bluey exec python3 -m bluey.app "$@"
+SH
+
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/user/$_pkgname.service" <<'UNIT'
+[Unit]
+Description=Bluey host (phone focus friend)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/bluey
+# "Quit Bluey" exits 0 and stays quit; crashes restart.
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
+UNIT
+
+  local ext=gnome-extension/bluey@googly-eyes
+  install -Dm644 -t "$pkgdir/usr/share/gnome-shell/extensions/bluey@googly-eyes" "$ext/extension.js" "$ext/metadata.json"
+  install -Dm644 -t "$pkgdir/usr/share/glib-2.0/schemas" "$ext/schemas/org.gnome.shell.extensions.bluey.gschema.xml"
+  install -Dm644 ../LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
